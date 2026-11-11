@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection for the app, direct connection for migrations.
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model Category {
+  id       Int       @id @default(autoincrement())
+  slug     String    @unique
+  nameRu   String
+  nameUz   String
+  order    Int       @default(0)
+  products Product[]
+}
+
+model Product {
+  id         Int      @id @default(autoincrement())
+  slug       String   @unique
+  brand      String
+  name       String
+  descRu     String
+  descUz     String
+  priceUzs   Int
+  stock      Int      @default(0)
+  specs      Json
+  active     Boolean  @default(true)
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  orderItems OrderItem[]
+
+  @@index([categoryId, active])
+}
+
+model Game {
+  id          Int     @id @default(autoincrement())
+  slug        String  @unique
+  name        String
+  year        Int
+  // Reference FPS at 1080p on the reference GPU (index 100), per preset
+  fpsLow      Int
+  fpsMedium   Int
+  fpsHigh     Int
+  fpsUltra    Int
+  // FPS ceiling imposed by the reference CPU (index 100)
+  cpuFps      Int
+  ramGb       Int
+  vramLow     Int
+  vramMedium  Int
+  vramHigh    Int
+  vramUltra   Int
+  active      Boolean @default(true)
+}
+
+model Order {
+  id                  Int         @id @default(autoincrement())
+  /// Unguessable id used in the customer's order link.
+  token               String      @unique
+  /// awaiting_payment, receipt_received, confirmed or rejected
+  status              String      @default("awaiting_payment")
+  customerName        String
+  phone               String
+  address             String
+  comment             String?
+  locale              String
+  totalUzs            BigInt
+  receiptFile         String?
+  receiptMime         String?
+  receiptUploadedAt   DateTime?
+  receiptAttempts     Int         @default(0)
+  telegramSentAt      DateTime?
+  telegramError       String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  items               OrderItem[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  /// Name and price as they were when the order was placed.
+  brand     String
+  name      String
+  priceUzs  Int
+  quantity  Int
+
+  @@index([orderId])
+}

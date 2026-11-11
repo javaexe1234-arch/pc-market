@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #0c0f12;
+  --color-panel: #14191e;
+  --color-raised: #1c2329;
+  --color-line: #2b343c;
+  --color-text: #eef2f4;
+  --color-muted: #9aa7b0;
+  --color-signal: #c6f135;
+  --color-signal-ink: #15190a;
+  --color-danger: #ff7a70;
+  --color-warn: #f4bb4a;
+  --color-good: #62dc8c;
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
+}
+
+:root {
+  color-scheme: dark;
+  --viewer-center: #242c34;
+  --viewer-edge: #0f1317;
+}
+
+/* Light palette: chosen with the toggle, or the system setting while nothing is chosen.
+   The two blocks must stay identical. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --color-ink: #f3f5f6;
+    --color-panel: #ffffff;
+    --color-raised: #e8ecef;
+    --color-line: #d2d9de;
+    --color-text: #13181c;
+    --color-muted: #55626c;
+    --color-signal: #4b7a00;
+    --color-signal-ink: #ffffff;
+    --color-danger: #c4291f;
+    --color-warn: #8f5b00;
+    --color-good: #15803d;
+    --viewer-center: #f4f7f9;
+    --viewer-edge: #c9d1d7;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-ink: #f3f5f6;
+  --color-panel: #ffffff;
+  --color-raised: #e8ecef;
+  --color-line: #d2d9de;
+  --color-text: #13181c;
+  --color-muted: #55626c;
+  --color-signal: #4b7a00;
+  --color-signal-ink: #ffffff;
+  --color-danger: #c4291f;
+  --color-warn: #8f5b00;
+  --color-good: #15803d;
+  --viewer-center: #f4f7f9;
+  --viewer-edge: #c9d1d7;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-signal);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.65);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: background-color 120ms, border-color 120ms, color 120ms;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--color-signal);
+  color: var(--color-signal-ink);
+}
+
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--color-signal) 85%, var(--color-text));
+}
+
+.btn-ghost {
+  border: 1px solid var(--color-line);
+  color: var(--color-text);
+}
+
+.btn-ghost:hover {
+  border-color: var(--color-muted);
+}
+
+.field {
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.5rem;
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
