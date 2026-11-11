@@ -24,6 +24,8 @@ let otherId: number;
 
 beforeAll(async () => {
   if (!usable) return;
+  // Never message the real Telegram chat from tests.
+  process.env.TELEGRAM_BOT_TOKEN = "";
   process.env.DATABASE_URL = TEST_URL;
   process.env.DATABASE_URL_UNPOOLED = TEST_URL_DIRECT;
   // Applies any new migrations to the test branch; it never deletes data.
@@ -134,6 +136,58 @@ describe.skipIf(!usable)("decideOrder", () => {
 
   it("does nothing for an unknown order", async () => {
     expect(await orders.decideOrder(999999, "confirmed")).toBe(false);
+  });
+});
+
+describe.skipIf(!usable)("fulfillCheckoutSession", () => {
+  const place = () => orders.placeOrder(FIELDS, [{ productId, quantity: 2 }], "ru");
+  const session = (orderId: number, overrides: Record<string, unknown> = {}) =>
+    ({
+      id: `cs_test_${randomBytes(6).toString("hex")}`,
+      payment_status: "paid",
+      metadata: { orderId: String(orderId) },
+      currency: "uzs",
+      amount_total: 84_000_000 * 100,
+      payment_intent: "pi_test_123",
+      ...overrides,
+    }) as never;
+  const load = (id: number) => prisma.order.findUniqueOrThrow({ where: { id } });
+
+  it("marks a fully paid order as paid by card, once", async () => {
+    const { fulfillCheckoutSession } = await import("../src/lib/stripe-payments");
+    const order = await place();
+    const paid = session(order.id);
+    expect(await fulfillCheckoutSession(paid)).toBe("paid");
+    expect(await load(order.id)).toMatchObject({ status: "confirmed", paymentMethod: "stripe", stripePaymentIntent: "pi_test_123" });
+    expect((await load(order.id)).paidAt).toBeInstanceOf(Date);
+    expect(await fulfillCheckoutSession(paid)).toBe("alreadyPaid");
+  });
+
+  it("ignores unpaid, underpaid, foreign-currency and other-order sessions", async () => {
+    const { fulfillCheckoutSession } = await import("../src/lib/stripe-payments");
+    const order = await place();
+    expect(await fulfillCheckoutSession(session(order.id, { payment_status: "unpaid" }))).toBe("notPaid");
+    expect(await fulfillCheckoutSession(session(order.id, { amount_total: 100 }))).toBe("notPaid");
+    expect(await fulfillCheckoutSession(session(order.id, { currency: "usd" }))).toBe("notPaid");
+    expect(await fulfillCheckoutSession(session(order.id, { metadata: {} }))).toBe("notPaid");
+    expect(await fulfillCheckoutSession(session(999_999_999))).toBe("notPaid");
+    expect(await load(order.id)).toMatchObject({ status: "awaiting_payment", paymentMethod: null });
+  });
+
+  it("flags money that arrives for an order already rejected", async () => {
+    const { fulfillCheckoutSession } = await import("../src/lib/stripe-payments");
+    const order = await place();
+    await orders.decideOrder(order.id, "rejected");
+    expect(await fulfillCheckoutSession(session(order.id))).toBe("paidButClosed");
+    expect(await load(order.id)).toMatchObject({ status: "rejected", paymentMethod: null });
+  });
+
+  it("records the payment only once when the webhook and the return page race", async () => {
+    const { fulfillCheckoutSession } = await import("../src/lib/stripe-payments");
+    const order = await place();
+    const paid = session(order.id);
+    const results = await Promise.all([fulfillCheckoutSession(paid), fulfillCheckoutSession(paid)]);
+    expect(results.filter((r) => r === "paid")).toHaveLength(1);
   });
 });
 

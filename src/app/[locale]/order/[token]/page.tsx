@@ -1,20 +1,39 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { PayByCard } from "@/components/checkout/PayByCard";
 import { ReceiptUpload } from "@/components/checkout/ReceiptUpload";
 import { formatUzs } from "@/lib/format";
 import { formatOrderNumber, getOrderByToken } from "@/lib/orders";
 import { MAX_RECEIPT_ATTEMPTS } from "@/lib/receipt";
+import { stripeClient } from "@/lib/stripe";
+import { fulfillCheckoutSession } from "@/lib/stripe-payments";
 
 export const dynamic = "force-dynamic";
 
 // The link holds the customer's contact details, so search engines must not index it.
 export const metadata: Metadata = { robots: { index: false, follow: false }, referrer: "no-referrer" };
 
-type Props = { params: Promise<{ locale: string; token: string }> };
+type Props = {
+  params: Promise<{ locale: string; token: string }>;
+  searchParams: Promise<{ stripe_session?: string; stripe?: string }>;
+};
 
-export default async function OrderPage({ params }: Props) {
+/** Back from Stripe: confirm the payment right away instead of waiting for the webhook. */
+async function confirmReturn(sessionId: string | undefined) {
+  const stripe = stripeClient();
+  if (!stripe || !sessionId || !/^cs_[A-Za-z0-9_]{10,200}$/.test(sessionId)) return;
+  try {
+    await fulfillCheckoutSession(await stripe.checkout.sessions.retrieve(sessionId));
+  } catch (error) {
+    console.error("Could not confirm the Stripe payment on return:", error instanceof Error ? error.message : error);
+  }
+}
+
+export default async function OrderPage({ params, searchParams }: Props) {
   const { locale, token } = await params;
+  const query = await searchParams;
+  if (query.stripe_session && (await getOrderByToken(token))) await confirmReturn(query.stripe_session);
   const order = await getOrderByToken(token);
   if (!order) notFound();
   const t = await getTranslations("order");
@@ -24,6 +43,9 @@ export default async function OrderPage({ params }: Props) {
   const closed = order.status === "confirmed" || order.status === "rejected";
   const card = process.env.PAYMENT_CARD_NUMBER?.trim();
   const holder = process.env.PAYMENT_CARD_HOLDER?.trim();
+  const cardPayment = !closed && !!stripeClient();
+  const paidByCard = order.paymentMethod === "stripe";
+  const awaitingStripe = !!query.stripe_session && !paidByCard && !closed;
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
@@ -31,11 +53,16 @@ export default async function OrderPage({ params }: Props) {
         <h1 className="text-3xl font-extrabold">{t("title", { number })}</h1>
         <p className="mt-2 font-semibold" data-testid="order-status">{t(`status_${order.status}` as never)}</p>
         <p className="mt-1 text-sm text-muted">{t("keepLink")}</p>
+        {paidByCard && <p role="status" className="mt-2 text-sm text-good" data-testid="paid-by-card">{t("cardPaid")}</p>}
+        {awaitingStripe && <p role="status" className="mt-2 text-sm text-warn" data-testid="card-pending">{t("cardPending")}</p>}
+        {query.stripe === "cancelled" && !closed && <p role="status" className="mt-2 text-sm text-muted">{t("cardCancelled")}</p>}
       </div>
+
+      {cardPayment && <PayByCard token={order.token} />}
 
       {!closed && (
         <section className="rounded-xl border border-line bg-panel p-5">
-          <h2 className="text-lg font-bold">{t("payTitle")}</h2>
+          <h2 className="text-lg font-bold">{cardPayment ? t("transferTitle") : t("payTitle")}</h2>
           <p className="mt-1 text-sm text-muted">{t("payText")}</p>
           <p className="mt-3 font-mono text-2xl font-semibold" data-testid="order-total">{formatUzs(Number(order.totalUzs), locale)}</p>
           {card ? (

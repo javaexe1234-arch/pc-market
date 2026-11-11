@@ -76,6 +76,12 @@ model Order {
   receiptAttempts     Int         @default(0)
   telegramSentAt      DateTime?
   telegramError       String?
+  /// "stripe" once paid by card through Stripe Checkout; null for bank transfer with a receipt.
+  paymentMethod       String?
+  /// The latest Checkout Session started for this order.
+  stripeSessionId     String?     @unique
+  stripePaymentIntent String?
+  paidAt              DateTime?
   createdAt           DateTime    @default(now())
   updatedAt           DateTime    @updatedAt
   items               OrderItem[]

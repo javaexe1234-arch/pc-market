@@ -65,7 +65,7 @@ export default async function OrdersPage({ searchParams }: Props) {
                   <td className="whitespace-nowrap px-3 py-2 text-muted">{order.createdAt.toLocaleString("ru-RU", { timeZone: "Asia/Tashkent", dateStyle: "short", timeStyle: "short" })}</td>
                   <td className="px-3 py-2">{order.customerName}<span className="block text-xs text-muted">{order.phone}</span></td>
                   <td className="whitespace-nowrap px-3 py-2 text-right font-mono">{formatUzs(Number(order.totalUzs), "ru")}</td>
-                  <td className={`px-3 py-2 font-semibold ${ORDER_STATUS_STYLE[order.status] ?? ""}`}>{ORDER_STATUS_LABEL[order.status] ?? order.status}</td>
+                  <td className={`px-3 py-2 font-semibold ${ORDER_STATUS_STYLE[order.status] ?? ""}`}>{ORDER_STATUS_LABEL[order.status] ?? order.status}{order.paymentMethod === "stripe" ? " · Stripe" : ""}</td>
                 </tr>
               ))}
             </tbody>

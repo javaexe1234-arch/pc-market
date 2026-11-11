@@ -31,6 +31,11 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
   const receiptUrl = adminHref(config, `/receipts/${order.id}?v=${order.receiptAttempts}`);
   const canConfirm = order.status === "awaiting_payment" || order.status === "receipt_received";
   const canReject = order.status !== "rejected";
+  const paidByCard = order.paymentMethod === "stripe";
+  const stripeMode = process.env.STRIPE_SECRET_KEY?.trim().startsWith("sk_test_") ? "test/" : "";
+  const stripePaymentUrl = order.stripePaymentIntent
+    ? `https://dashboard.stripe.com/${stripeMode}payments/${order.stripePaymentIntent}`
+    : null;
 
   return (
     <div className="space-y-5">
@@ -42,6 +47,22 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
         </p>
         {notice && <p role="status" className={`mt-1 text-sm ${notice.style}`} data-testid="admin-notice">{notice.text}</p>}
       </div>
+
+      {paidByCard && (
+        <section className="rounded-xl border border-good/50 bg-panel p-5" data-testid="admin-paid-by-card">
+          <h2 className="font-bold text-good">Оплачено картой через Stripe</h2>
+          <p className="mt-1 text-sm">
+            {order.paidAt?.toLocaleString("ru-RU", { timeZone: "Asia/Tashkent" })}
+            {stripePaymentUrl && (
+              <>
+                {" · "}
+                <a href={stripePaymentUrl} target="_blank" rel="noreferrer" className="underline">открыть платёж в Stripe</a>
+              </>
+            )}
+          </p>
+          <p className="mt-1 text-xs text-muted">Stripe уже проверил оплату, подтверждать её вручную не нужно.</p>
+        </section>
+      )}
 
       <div className="grid items-start gap-5 lg:grid-cols-[1fr_22rem]">
         <section className="rounded-xl border border-line bg-panel p-5">
@@ -87,6 +108,7 @@ export default async function OrderDetailPage({ params, searchParams }: Props) {
             <details className="rounded-lg border border-line p-3 text-sm">
               <summary className="cursor-pointer font-semibold" data-testid="reject-open">Отклонить заказ</summary>
               <p className="mt-2 text-muted">Товары вернутся на склад, а покупатель увидит, что оплата не подтверждена. Отменить это нельзя.</p>
+              {paidByCard && <p className="mt-2 font-semibold text-warn">Заказ оплачен картой: деньги не вернутся сами, сделайте возврат в панели Stripe.</p>}
               <form action={decideOrderAction} className="mt-2">
                 <input type="hidden" name="id" value={order.id} />
                 <input type="hidden" name="decision" value="rejected" />

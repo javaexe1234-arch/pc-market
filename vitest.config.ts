@@ -2,6 +2,8 @@ import { loadEnv } from "vite";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  // Same "@/..." imports as the app (tsconfig paths), so tests can load route handlers.
+  resolve: { alias: { "@": new URL("./src", import.meta.url).pathname.replace(/^\/(\w:)/, "$1") } },
   test: {
     // Makes TEST_DATABASE_URL from .env available to the database tests.
     env: loadEnv("test", process.cwd(), ""),

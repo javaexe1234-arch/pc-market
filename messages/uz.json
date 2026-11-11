@@ -303,6 +303,15 @@
     "error_tooManyAttempts": "Bu buyurtma uchun yuklash chegarasi tugadi. Do'kon bilan bog'laning.",
     "error_tooManyRequests": "Urinishlar juda ko'p. Bir necha daqiqa kuting.",
     "error_orderClosed": "Bu buyurtma allaqachon yopilgan.",
-    "error_generic": "Chekni yuklab bo'lmadi. Yana urinib ko'ring."
+    "error_generic": "Chekni yuklab bo'lmadi. Yana urinib ko'ring.",
+    "cardTitle": "Karta orqali onlayn to'lov",
+    "cardText": "Visa yoki Mastercard, Stripe'ning himoyalangan sahifasi orqali. Buyurtma to'lovdan so'ng darhol tasdiqlanadi, chek yuklash shart emas.",
+    "cardPay": "Karta bilan to'lash",
+    "cardRedirecting": "To'lovga o'tilmoqda…",
+    "cardError": "Karta orqali to'lovni ochib bo'lmadi. Yana urinib ko'ring yoki o'tkazma orqali to'lang.",
+    "cardPaid": "Karta orqali to'landi. Yetkazib berish uchun siz bilan bog'lanamiz.",
+    "cardPending": "To'lov tekshirilmoqda. Bir daqiqadan so'ng sahifani yangilang.",
+    "cardCancelled": "Karta orqali to'lov bekor qilindi. Yana urinib ko'rish yoki o'tkazma orqali to'lash mumkin.",
+    "transferTitle": "Yoki do'kon kartasiga o'tkazma"
   }
 }
