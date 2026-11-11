@@ -1,4 +1,5 @@
-export const MAX_RECEIPT_BYTES = 10 * 1024 * 1024;
+/** Vercel refuses request bodies over 4.5 MB, so the receipt itself must stay under that. */
+export const MAX_RECEIPT_BYTES = 4 * 1024 * 1024;
 export const MAX_RECEIPT_ATTEMPTS = 5;
 
 export interface ReceiptType {

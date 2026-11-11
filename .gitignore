@@ -9,3 +9,7 @@ prisma/*.db-journal
 storage/
 .neon
 .claude/settings.local.json
+
+.vercel
+.env*
+!.env.example

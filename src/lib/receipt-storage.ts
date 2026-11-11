@@ -11,7 +11,21 @@ import type { ReceiptType } from "./receipt";
 export const RECEIPT_BUCKET = "receipts";
 
 let files: Files | undefined;
-const storage = () => (files ??= new Files({ adapter: neon({ bucket: RECEIPT_BUCKET }) }));
+
+/**
+ * Vercel reserves the AWS_* variable names, so a Vercel deployment passes the same values as
+ * NEON_S3_*. Locally they're unset and the adapter reads the AWS_* values that Neon writes to .env.
+ */
+const storage = () =>
+  (files ??= new Files({
+    adapter: neon({
+      bucket: RECEIPT_BUCKET,
+      endpoint: process.env.NEON_S3_ENDPOINT || undefined,
+      region: process.env.NEON_S3_REGION || undefined,
+      accessKeyId: process.env.NEON_S3_ACCESS_KEY_ID || undefined,
+      secretAccessKey: process.env.NEON_S3_SECRET_ACCESS_KEY || undefined,
+    }),
+  }));
 
 /** A fresh key per upload, so a replaced receipt never overwrites the previous object in place. */
 export const receiptKey = (orderId: number, type: ReceiptType) =>
